@@ -3,6 +3,7 @@ package me.piepers.jpc.collector;
 import io.vertx.core.Promise;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.net.NetServer;
 import io.vertx.reactivex.core.net.NetSocket;
 import org.slf4j.Logger;
@@ -15,6 +16,9 @@ import java.util.Objects;
  */
 public class JpcCollectorVerticle extends AbstractVerticle {
   private static final Logger LOGGER = LoggerFactory.getLogger(JpcCollectorVerticle.class);
+  private static final Logger JPC_LOGGER = LoggerFactory.getLogger("jpc-logger");
+  private static final Logger JPC_LOGGER_INT = LoggerFactory.getLogger("jpc-logger-int");
+
   private NetServer server;
 
   @Override
@@ -23,7 +27,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     this.server.connectHandler(netSocket -> this.handleConnection(netSocket));
     this.server
       .rxListen()
-      .doOnSuccess(netServer -> LOGGER.debug("Server was started on port 5279"))
+      .doOnSuccess(netServer -> LOGGER.debug("Server was started on port 5279. See jpc-logger for incoming transmissions."))
       .doOnError(throwable -> LOGGER.error("Unable to start TCP server.", throwable))
       .doOnError(Throwable::printStackTrace)
       .subscribe(netServer -> startFuture.complete(),
@@ -31,9 +35,22 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   }
 
   private void handleConnection(NetSocket netSocket) {
-    netSocket.handler(buffer -> LOGGER.debug("Received something with length {} from the JPC Logger:\n{}",
-      buffer.length(), buffer.toString()));
+    netSocket.handler(buffer -> this.handleBuffer(buffer));
     netSocket.closeHandler(v -> this.logAddresses(netSocket));
+  }
+
+  private void handleBuffer(Buffer buffer) {
+    StringBuilder sb = new StringBuilder();
+    StringBuilder intSb = new StringBuilder();
+    for(byte b : buffer.getBytes()) {
+      sb.append(String.format("%02X ", b));
+      int i = b;
+      intSb.append(i + " ");
+    }
+//    LOGGER.debug("Received with length {}: {}", buffer.length(), sb.toString());
+
+    JPC_LOGGER.debug("{} | {}", buffer.length(), sb.toString());
+    JPC_LOGGER_INT.debug("{} | {}", buffer.length(), intSb.toString());
   }
 
   private void logAddresses(NetSocket netSocket) {

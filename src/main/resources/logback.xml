@@ -15,10 +15,43 @@
     <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
       by default -->
     <encoder>
-      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+      <pattern>%date [%thread] %-5level %logger{35} - %msg%n
       </pattern>
     </encoder>
   </appender>
+
+  <appender name="JPCAPPENDER" class="ch.qos.logback.core.FileAppender">
+    <file>jpc.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+      by default -->
+    <encoder>
+      <pattern>%date - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+  <appender name="JPCAPPENDERI" class="ch.qos.logback.core.FileAppender">
+    <file>jpci.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+      by default -->
+    <encoder>
+      <pattern>%date - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+
+  <logger name="jpc-logger" level="DEBUG" additivity="false">
+    <appender-ref ref="JPCAPPENDER"/>
+  </logger>
+
+  <logger name="jpc-logger-int" level="DEBUG" additivity="false">
+    <appender-ref ref="JPCAPPENDERI"/>
+  </logger>
 
   <logger name="me.piepers" level="DEBUG" additivity="false">
     <appender-ref ref="FILE" />
