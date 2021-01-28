@@ -18,6 +18,8 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   private static final Logger LOGGER = LoggerFactory.getLogger(JpcCollectorVerticle.class);
   private static final Logger JPC_LOGGER = LoggerFactory.getLogger("jpc-logger");
   private static final Logger JPC_LOGGER_INT = LoggerFactory.getLogger("jpc-logger-int");
+  private static final Logger JPC_LOGGER_BTE = LoggerFactory.getLogger("jpc-logger-byte");
+  private static final Logger JPC_LOGGER_S = LoggerFactory.getLogger("jpc-logger-string");
 
   private NetServer server;
 
@@ -35,28 +37,146 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   }
 
   private void handleConnection(NetSocket netSocket) {
-    netSocket.handler(buffer -> this.handleBuffer(buffer));
-    netSocket.closeHandler(v -> this.logAddresses(netSocket));
+    this.logAddresses(netSocket, "established");
+    netSocket.handler(buffer -> this.handleBuffer(netSocket, buffer));
+    netSocket.closeHandler(v -> this.logAddresses(netSocket, "closed"));
   }
 
-  private void handleBuffer(Buffer buffer) {
+  private void handleBuffer(NetSocket netSocket, Buffer buffer) {
+    byte[] bytes = buffer.getBytes();
+    int l = buffer.length();
+    JPC_LOGGER_S.debug("{} | {}", l, buffer.toString());
+    JPC_LOGGER_BTE.debug("{} | {}", l, bytes);
+
+    this.logAsHexString(bytes, l);
+
+    if (this.isPingMessage(bytes)) {
+      // The message appears to be a ping message. Just "echo" it.
+      LOGGER.debug("Echo'ing ping message.");
+      netSocket
+        .rxWrite(buffer)
+        .doOnError(throwable -> throwable.printStackTrace())
+        .subscribe(() -> LOGGER.debug("Wrote echo to client"),
+          throwable -> LOGGER.error("Unable to echo ping request to client due to: ", throwable));
+    }
+    if (this.isAnnounce(bytes)) {
+      // Announce?
+      LOGGER.debug("Announce message detected. Sending ACK");
+      // Append the length, followed by the function (0x01 0x03) and an empty body (0x00)
+      byte[] response = new byte[9];
+      this.copyHeader(response, bytes);
+
+      // Set the size to 0x00 0x03
+      response[4] = 0x00;
+      response[5] = 0x03;
+
+      // Set the function (0x01 0x03)
+      response[6] = 0x01;
+      response[7] = 0x03;
+      // And an empty body (0x00)
+      response[8] = 0x00;
+
+      LOGGER.debug("Compiled announce response as {} (hex)", this.asHexString(response));
+
+      netSocket
+        .rxWrite(Buffer.buffer(response))
+        .doOnError(throwable -> throwable.printStackTrace())
+        .subscribe(() -> LOGGER.debug("ACK sent for announce message."),
+          throwable -> LOGGER.error("Unable to ACK the announce message due to: ", throwable));
+    }
+    if (this.isIdentify(bytes)) {
+      LOGGER.debug("Identify item detected. Not doing anything (just log the message)");
+    }
+    if (this.isData(bytes)) {
+      // We need to acknowledge the data but at the moment we do nothing else than that.
+      LOGGER.debug("Data message detected. Sending ACK");
+      byte[] response = new byte[9];
+      this.copyHeader(response, bytes);
+
+      // Set the size to 3 (0x03)
+      response[4] = 0x00;
+      response[5] = 0x03;
+
+      // Set the function (0x01 0x04)
+      response[6] = 0x01;
+      response[7] = bytes[7];
+      // Add an empty body (0x00)
+      response[8] = 0x00;
+
+      LOGGER.debug("Compiled data response as {} (hex)", this.asHexString(response));
+
+      netSocket
+        .rxWrite(Buffer.buffer(response))
+        .doOnError(throwable -> throwable.printStackTrace())
+        .subscribe(() -> LOGGER.debug("ACK sent for data message."),
+          throwable -> LOGGER.error("Unable to sent ACK for data message due to: ", throwable));
+    }
+  }
+
+  private void logAsHexString(byte[] bytes, int bufferLength){
+
     StringBuilder sb = new StringBuilder();
     StringBuilder intSb = new StringBuilder();
-    for(byte b : buffer.getBytes()) {
+    for (byte b : bytes) {
       sb.append(String.format("%02X ", b));
       int i = b;
       intSb.append(i + " ");
     }
-//    LOGGER.debug("Received with length {}: {}", buffer.length(), sb.toString());
 
-    JPC_LOGGER.debug("{} | {}", buffer.length(), sb.toString());
-    JPC_LOGGER_INT.debug("{} | {}", buffer.length(), intSb.toString());
+    JPC_LOGGER.debug("{} | {}", bufferLength, sb.toString());
+    JPC_LOGGER_INT.debug("{} | {}", bufferLength, intSb.toString());
+
   }
 
-  private void logAddresses(NetSocket netSocket) {
+  private String asHexString(byte[] bytes){
+    StringBuilder sb = new StringBuilder();
+    for (byte b : bytes) {
+      sb.append(String.format("%02X ", b));
+      int i = b;
+    }
+    return sb.toString();
+  }
+
+  private void copyHeader(byte[] into, byte[] bytes) {
+    if(bytes.length < 5){
+      throw new IllegalStateException("Bytes too small");
+    }
+
+    // Copy the first 4 elements of the original message (this is the header of the message)
+    for (int i = 0; i < 4; i++) {
+      into[i] = bytes[i];
+    }
+  }
+
+  private boolean isData(byte[] bytes) {
+    return this.isFunction(bytes, (byte) 0x01, (byte) 0x04) || this.isFunction(bytes, (byte) 0x01, (byte) 0x05);
+  }
+
+  private boolean isIdentify(byte[] bytes) {
+    return this.isFunction(bytes, (byte) 0x01, (byte) 0x19);
+  }
+
+  private boolean isPingMessage(byte[] bytes) {
+    return this.isFunction(bytes, (byte) 0x01, (byte) 0x16);
+  }
+
+  private boolean isAnnounce(byte[] bytes) {
+    return this.isFunction(bytes, (byte) 0x01, (byte) 0x03);
+  }
+
+  // A function consists out of 2 bytes which could be represented differently but written out to make it a bit more verbose.
+  private boolean isFunction(byte[] bytes, byte part1, byte part2) {
+    return this.meetsExceedsMinLength(bytes) && bytes[6] == part1 && bytes[7] == part2;
+  }
+
+  private boolean meetsExceedsMinLength(byte[] bytes) {
+    return bytes.length >= 8;
+  }
+
+  private void logAddresses(NetSocket netSocket, String event) {
     io.vertx.core.net.NetSocket delegate = netSocket.getDelegate();
-    LOGGER.debug("Socket with remote address {} and local address {} was closed.",
+    LOGGER.debug("Socket with remote address {} and local address {} was {}.",
       Objects.nonNull(delegate.remoteAddress()) ? delegate.remoteAddress().host() : "unknown",
-      Objects.nonNull(delegate.localAddress()) ? delegate.localAddress().host() : "unknown");
+      Objects.nonNull(delegate.localAddress()) ? delegate.localAddress().host() : "unknown", event);
   }
 }

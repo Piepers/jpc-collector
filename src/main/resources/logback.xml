@@ -7,11 +7,15 @@
     </encoder>
   </appender>
 
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>debug.log</file>
     <append>true</append>
     <!-- set immediateFlush to false for much higher logging throughput -->
     <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>debug.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
     <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
       by default -->
     <encoder>
@@ -20,11 +24,15 @@
     </encoder>
   </appender>
 
-  <appender name="JPCAPPENDER" class="ch.qos.logback.core.FileAppender">
+  <appender name="JPCAPPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>jpc.log</file>
     <append>true</append>
     <!-- set immediateFlush to false for much higher logging throughput -->
     <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>jpc.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
     <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
       by default -->
     <encoder>
@@ -32,11 +40,50 @@
       </pattern>
     </encoder>
   </appender>
-  <appender name="JPCAPPENDERI" class="ch.qos.logback.core.FileAppender">
+
+  <appender name="JPCAPPENDERI" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>jpci.log</file>
     <append>true</append>
     <!-- set immediateFlush to false for much higher logging throughput -->
     <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>jpci.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+      by default -->
+    <encoder>
+      <pattern>%date - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+
+  <appender name="JPCAPPENDERB" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>jpcb.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>jpcb.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+      by default -->
+    <encoder>
+      <pattern>%date - %msg%n
+      </pattern>
+    </encoder>
+  </appender>
+
+  <appender name="JPCAPPENDERS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>jpcs.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>jpcs.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
     <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
       by default -->
     <encoder>
@@ -51,6 +98,14 @@
 
   <logger name="jpc-logger-int" level="DEBUG" additivity="false">
     <appender-ref ref="JPCAPPENDERI"/>
+  </logger>
+
+  <logger name="jpc-logger-byte" level="DEBUG" additivity="false">
+    <appender-ref ref="JPCAPPENDERB"/>
+  </logger>
+
+  <logger name="jpc-logger-string" level="DEBUG" additivity="false">
+    <appender-ref ref="JPCAPPENDERS"/>
   </logger>
 
   <logger name="me.piepers" level="DEBUG" additivity="false">
