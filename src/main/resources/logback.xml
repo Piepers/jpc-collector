@@ -92,6 +92,23 @@
     </encoder>
   </appender>
 
+  <appender name="JPCAPPENDERD" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>jpcd.log</file>
+    <append>true</append>
+    <!-- set immediateFlush to false for much higher logging throughput -->
+    <immediateFlush>true</immediateFlush>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- Rollover daily -->
+      <fileNamePattern>jpcd.%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+      by default -->
+    <encoder>
+      <pattern>%msg%n
+      </pattern>
+    </encoder>
+  </appender>
+
   <logger name="jpc-logger" level="DEBUG" additivity="false">
     <appender-ref ref="JPCAPPENDER"/>
   </logger>
@@ -106,6 +123,10 @@
 
   <logger name="jpc-logger-string" level="DEBUG" additivity="false">
     <appender-ref ref="JPCAPPENDERS"/>
+  </logger>
+
+  <logger name="jpc-logger-data" level="DEBUG" additivity="false">
+    <appender-ref ref="JPCAPPENDERD"/>
   </logger>
 
   <logger name="me.piepers" level="DEBUG" additivity="false">

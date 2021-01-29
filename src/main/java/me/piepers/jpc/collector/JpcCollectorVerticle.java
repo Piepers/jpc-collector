@@ -9,7 +9,8 @@ import io.vertx.reactivex.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * A simple verticle that listens to a port and receives incoming packets and appends it to a log file.
@@ -20,7 +21,52 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   private static final Logger JPC_LOGGER_INT = LoggerFactory.getLogger("jpc-logger-int");
   private static final Logger JPC_LOGGER_BTE = LoggerFactory.getLogger("jpc-logger-byte");
   private static final Logger JPC_LOGGER_S = LoggerFactory.getLogger("jpc-logger-string");
+  private static final Logger DATA_LOGGER = LoggerFactory.getLogger("jpc-logger-data");
 
+  Map<String, Integer> struct0104 = new HashMap<>() {{
+    put("pvserial", 76);
+    put("date", 0);
+    put("pvstatus", 158);
+    put("pvpowerin", 162);
+    put("pv1voltage", 170);
+    put("pv1current", 174);
+    put("pv1watt", 178);
+    put("pv2voltage", 186);
+    put("pv2current", 190);
+    put("pv2watt", 194);
+    put("pvpowerout", 202);
+    put("pvfrequency", 210);
+    put("pvgridvoltage", 214);
+    put("pvenergytoday", 262);
+    put("pvenergytotal", 270);
+    put("pvtemperature", 286);
+    put("pvipmtemperature", 322);
+  }};
+
+  // Note: the scructure below is identical to the 0104 but the date seems to be present here.
+  Map<String, Integer> struct0150 = new HashMap<>() {{
+    put("pvserial", 76);
+    put("date", 136);
+    put("pvstatus", 158);
+    put("pvpowerin", 162);
+    put("pv1voltage", 170);
+    put("pv1current", 174);
+    put("pv1watt", 178);
+    put("pv2voltage", 186);
+    put("pv2current", 190);
+    put("pv2watt", 194);
+    put("pvpowerout", 202);
+    put("pvfrequency", 210);
+    put("pvgridvoltage", 214);
+    put("pvenergytoday", 262);
+    put("pvenergytotal", 270);
+    put("pvtemperature", 286);
+    put("pvipmtemperature", 322);
+  }};
+
+  char[] mask = {'G', 'r', 'o', 'w', 'a', 't', 't'};
+
+  // TODO: keep a Map of servers as the JPC Logger doesn't always neatly closes the connection. Alternatively keep one server per inverter (and don't allow it to open multiple times).
   private NetServer server;
 
   @Override
@@ -45,8 +91,10 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   private void handleBuffer(NetSocket netSocket, Buffer buffer) {
     byte[] bytes = buffer.getBytes();
     int l = buffer.length();
-    JPC_LOGGER_S.debug("{} | {}", l, buffer.toString());
-    JPC_LOGGER_BTE.debug("{} | {}", l, bytes);
+    String uuid = UUID.randomUUID().toString();
+    LocalDateTime localDateTime = LocalDateTime.now();
+    JPC_LOGGER_S.debug("{} | {} | {}", l, uuid, buffer.toString());
+    JPC_LOGGER_BTE.debug("{} | {} | {}", l, uuid, bytes);
 
     this.logAsHexString(bytes, l);
 
@@ -103,6 +151,8 @@ public class JpcCollectorVerticle extends AbstractVerticle {
       // Add an empty body (0x00)
       response[8] = 0x00;
 
+      this.extractData(bytes, uuid, localDateTime);
+
       LOGGER.debug("Compiled data response as {} (hex)", this.asHexString(response));
 
       netSocket
@@ -113,22 +163,66 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     }
   }
 
-  private void logAsHexString(byte[] bytes, int bufferLength){
+  private void extractData(byte[] bytes, String uuid, LocalDateTime localDateTime) {
+    // Detect which struct to take.
+    StringBuilder uss = new StringBuilder();
+    // Do not unscramble the first 8 positions.
+    for (int i = 0; i < 8; i++) {
+      uss.append(String.format("%02X", bytes[i]));
+    }
+    for (int i = 8, j = 0; i < bytes.length; i++, j++) {
+      if (j == mask.length) {
+        j = 0;
+      }
+      uss.append(String.format("%02X", bytes[i] ^ (byte) mask[j]));
+    }
+
+    String result = uss.toString();
+    // TODO: a more sophisticated way of detecting which function/record it is would be nice.
+    Map<String, Integer> struct = uss.substring(12, 16).equals("0150") ? this.struct0150 : this.struct0104;
+
+    String pvserial = result.substring(struct.get("pvserial"), struct.get("pvserial") + 20);
+    int pvstatus = Integer.valueOf(result.substring(struct.get("pvstatus"), struct.get("pvstatus") + 4), 16);
+    Long pvpowerin = Long.parseLong(result.substring(struct.get("pvpowerin"), struct.get("pvpowerin") + 8), 16);
+    int pv1voltage = Integer.valueOf(result.substring(struct.get("pv1voltage"), struct.get("pv1voltage") + 4), 16);
+    int pv1current = Integer.valueOf(result.substring(struct.get("pv1current"), struct.get("pv1current") + 4), 16);
+    Long pv1watt = Long.parseLong(result.substring(struct.get("pv1watt"), struct.get("pv1watt") + 8), 16);
+    int pv2voltage = Integer.valueOf(result.substring(struct.get("pv2voltage"), struct.get("pv2voltage") + 4), 16);
+    int pv2current = Integer.valueOf(result.substring(struct.get("pv2current"), struct.get("pv2current") + 4), 16);
+    Long pv2watt = Long.parseLong(result.substring(struct.get("pv2watt"), struct.get("pv2watt") + 8), 16);
+    Long pvpowerout = Long.parseLong(result.substring(struct.get("pvpowerout"), struct.get("pvpowerout") + 8), 16);
+    int pvfrequentie = Integer.valueOf(result.substring(struct.get("pvfrequency"), struct.get("pvfrequency") + 4), 16);
+    int pvgridvoltage = Integer.valueOf(result.substring(struct.get("pvgridvoltage"), struct.get("pvgridvoltage") + 4), 16);
+    Long pvenergytoday = Long.parseLong(result.substring(struct.get("pvenergytoday"), struct.get("pvenergytoday") + 8), 16);
+    Long pvenergytotal = Long.parseLong(result.substring(struct.get("pvenergytotal"), struct.get("pvenergytotal") + 8), 16);
+    int pvtemperature = Integer.valueOf(result.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16);
+    int pvipmtemperature = Integer.valueOf(result.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16);
+
+    DATA_LOGGER.debug("uuid: " + uuid + "\ndate/time: " + localDateTime + "\npvserial: " + pvserial + "\npvstatus: " + pvstatus + "\npvpowerin: " + pvpowerin + "\npv1voltage: " + pv1voltage
+      + "\npv1current: " + pv1current + "\npv1watt: " + pv1watt + "\npv2voltage: " + pv2voltage + "\npv2current: " + pv2current + "\npv2watt: " + pv2watt
+      + "\npvpowerout: " + pvpowerout + "\npvfrequentie: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
+      + "\npvenergytotal: " + pvenergytotal + "\npvtemperature: " + pvtemperature + "\npvipmtemperature: " + pvipmtemperature);
+  }
+
+  private void logAsHexString(byte[] bytes, int bufferLength) {
 
     StringBuilder sb = new StringBuilder();
-    StringBuilder intSb = new StringBuilder();
-    for (byte b : bytes) {
+    int[] numbers = new int[bytes.length];
+//    StringBuilder intSb = new StringBuilder();
+    for (int i = 0; i < bytes.length; i++) {
+      byte b = bytes[i];
       sb.append(String.format("%02X ", b));
-      int i = b;
-      intSb.append(i + " ");
+      int n = Byte.toUnsignedInt(b);
+      numbers[i] = n;
+//      intSb.append(i + " ");
+
     }
 
     JPC_LOGGER.debug("{} | {}", bufferLength, sb.toString());
-    JPC_LOGGER_INT.debug("{} | {}", bufferLength, intSb.toString());
-
+    JPC_LOGGER_INT.debug("{} | {}", bufferLength, Arrays.toString(numbers));
   }
 
-  private String asHexString(byte[] bytes){
+  private String asHexString(byte[] bytes) {
     StringBuilder sb = new StringBuilder();
     for (byte b : bytes) {
       sb.append(String.format("%02X ", b));
@@ -138,7 +232,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   }
 
   private void copyHeader(byte[] into, byte[] bytes) {
-    if(bytes.length < 5){
+    if (bytes.length < 5) {
       throw new IllegalStateException("Bytes too small");
     }
 
