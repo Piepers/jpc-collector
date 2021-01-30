@@ -66,7 +66,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
   char[] mask = {'G', 'r', 'o', 'w', 'a', 't', 't'};
 
-  // TODO: keep a Map of servers as the JPC Logger doesn't always neatly closes the connection. Alternatively keep one server per inverter (and don't allow it to open multiple times).
+  // TODO: keep a Map of netsockets as the JPC Logger doesn't always neatly closes the connection. Alternatively keep one server per inverter (and don't allow it to open multiple times).
   private NetServer server;
 
   @Override
@@ -93,10 +93,11 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     int l = buffer.length();
     String uuid = UUID.randomUUID().toString();
     LocalDateTime localDateTime = LocalDateTime.now();
+
     JPC_LOGGER_S.debug("{} | {} | {}", l, uuid, buffer.toString());
     JPC_LOGGER_BTE.debug("{} | {} | {}", l, uuid, bytes);
 
-    this.logAsHexString(bytes, l);
+    this.logAsHexString(uuid, bytes, l);
 
     if (this.isPingMessage(bytes)) {
       // The message appears to be a ping message. Just "echo" it.
@@ -136,7 +137,10 @@ public class JpcCollectorVerticle extends AbstractVerticle {
       LOGGER.debug("Identify item detected. Not doing anything (just log the message)");
     }
     if (this.isData(bytes)) {
-      // We need to acknowledge the data but at the moment we do nothing else than that.
+      // Extract the data first - TODO: this must all be async so map to something readable, extract data, send ACK.
+      this.extractData(bytes, uuid, localDateTime);
+
+      // Now, send an acknowledge.
       LOGGER.debug("Data message detected. Sending ACK");
       byte[] response = new byte[9];
       this.copyHeader(response, bytes);
@@ -147,11 +151,10 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
       // Set the function (0x01 0x04)
       response[6] = 0x01;
+      // Can be 0x04 or 0x05
       response[7] = bytes[7];
       // Add an empty body (0x00)
       response[8] = 0x00;
-
-      this.extractData(bytes, uuid, localDateTime);
 
       LOGGER.debug("Compiled data response as {} (hex)", this.asHexString(response));
 
@@ -174,7 +177,9 @@ public class JpcCollectorVerticle extends AbstractVerticle {
       if (j == mask.length) {
         j = 0;
       }
-      uss.append(String.format("%02X", bytes[i] ^ (byte) mask[j]));
+      // Unscramble means: take the mask at a particular position and invoke an xor against the data at a specific position.
+      // TODO: Now the logging as well as this processing iterate the buffer and do the same. Make sure this happens only once.
+      uss.append(String.format("%02X", (Byte.toUnsignedInt(bytes[i])) ^ (byte) mask[j]));
     }
 
     String result = uss.toString();
@@ -200,26 +205,25 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
     DATA_LOGGER.debug("uuid: " + uuid + "\ndate/time: " + localDateTime + "\npvserial: " + pvserial + "\npvstatus: " + pvstatus + "\npvpowerin: " + pvpowerin + "\npv1voltage: " + pv1voltage
       + "\npv1current: " + pv1current + "\npv1watt: " + pv1watt + "\npv2voltage: " + pv2voltage + "\npv2current: " + pv2current + "\npv2watt: " + pv2watt
-      + "\npvpowerout: " + pvpowerout + "\npvfrequentie: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
+      + "\npvpowerout: " + pvpowerout + "\npvfrequency: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
       + "\npvenergytotal: " + pvenergytotal + "\npvtemperature: " + pvtemperature + "\npvipmtemperature: " + pvipmtemperature);
   }
 
-  private void logAsHexString(byte[] bytes, int bufferLength) {
+  private void logAsHexString(String uuid, byte[] bytes, int bufferLength) {
 
     StringBuilder sb = new StringBuilder();
     int[] numbers = new int[bytes.length];
-//    StringBuilder intSb = new StringBuilder();
     for (int i = 0; i < bytes.length; i++) {
       byte b = bytes[i];
       sb.append(String.format("%02X ", b));
       int n = Byte.toUnsignedInt(b);
       numbers[i] = n;
-//      intSb.append(i + " ");
+      numbers[i] = n;
 
     }
 
-    JPC_LOGGER.debug("{} | {}", bufferLength, sb.toString());
-    JPC_LOGGER_INT.debug("{} | {}", bufferLength, Arrays.toString(numbers));
+    JPC_LOGGER.debug("{} | {} | {}", bufferLength, uuid, sb.toString());
+    JPC_LOGGER_INT.debug("{} | {} | {}", bufferLength, uuid, Arrays.toString(numbers));
   }
 
   private String asHexString(byte[] bytes) {
