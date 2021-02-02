@@ -203,7 +203,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     int pvtemperature = Integer.valueOf(result.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16);
     int pvipmtemperature = Integer.valueOf(result.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16);
 
-    DATA_LOGGER.debug("uuid: " + uuid + "\ndate/time: " + localDateTime + "\npvserial: " + pvserial + "\npvstatus: " + pvstatus + "\npvpowerin: " + pvpowerin + "\npv1voltage: " + pv1voltage
+    DATA_LOGGER.debug("hex decrypted: " + result + "\nuuid: " + uuid + "\ndate/time: " + localDateTime + "\npvserial: " + pvserial + "\npvstatus: " + pvstatus + "\npvpowerin: " + pvpowerin + "\npv1voltage: " + pv1voltage
       + "\npv1current: " + pv1current + "\npv1watt: " + pv1watt + "\npv2voltage: " + pv2voltage + "\npv2current: " + pv2current + "\npv2watt: " + pv2watt
       + "\npvpowerout: " + pvpowerout + "\npvfrequency: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
       + "\npvenergytotal: " + pvenergytotal + "\npvtemperature: " + pvtemperature + "\npvipmtemperature: " + pvipmtemperature);
