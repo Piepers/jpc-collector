@@ -247,7 +247,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   }
 
   private boolean isData(byte[] bytes) {
-    return this.isFunction(bytes, (byte) 0x01, (byte) 0x04) || this.isFunction(bytes, (byte) 0x01, (byte) 0x05);
+    return this.isFunction(bytes, (byte) 0x01, (byte) 0x04) || this.isFunction(bytes, (byte) 0x01, (byte) 0x50);
   }
 
   private boolean isIdentify(byte[] bytes) {
