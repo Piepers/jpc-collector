@@ -273,7 +273,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
   private void logAddresses(NetSocket netSocket, String event) {
     io.vertx.core.net.NetSocket delegate = netSocket.getDelegate();
-    LOGGER.debug("Socket with remote address {} and local address {} was {}.",
+    LOGGER.debug("Connection with remote address {} and local address {} was {}.",
       Objects.nonNull(delegate.remoteAddress()) ? delegate.remoteAddress().host() : "unknown",
       Objects.nonNull(delegate.localAddress()) ? delegate.localAddress().host() : "unknown", event);
   }
