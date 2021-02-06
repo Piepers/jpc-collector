@@ -167,24 +167,10 @@ public class JpcCollectorVerticle extends AbstractVerticle {
   }
 
   private void extractData(byte[] bytes, String uuid, LocalDateTime localDateTime) {
-    // Detect which struct to take.
-    StringBuilder uss = new StringBuilder();
-    // Do not unscramble the first 8 positions.
-    for (int i = 0; i < 8; i++) {
-      uss.append(String.format("%02X", bytes[i]));
-    }
-    for (int i = 8, j = 0; i < bytes.length; i++, j++) {
-      if (j == mask.length) {
-        j = 0;
-      }
-      // Unscramble means: take the mask at a particular position and invoke an xor against the data at a specific position.
-      // TODO: Now the logging as well as this processing iterate the buffer and do the same. Make sure this happens only once.
-      uss.append(String.format("%02X", (Byte.toUnsignedInt(bytes[i])) ^ (byte) mask[j]));
-    }
+    String result = this.unscramble(bytes);
 
-    String result = uss.toString();
     // TODO: a more sophisticated way of detecting which function/record it is would be nice.
-    Map<String, Integer> struct = uss.substring(12, 16).equals("0150") ? this.struct0150 : this.struct0104;
+    Map<String, Integer> struct = result.substring(12, 16).equals("0150") ? this.struct0150 : this.struct0104;
 
     String pvserial = result.substring(struct.get("pvserial"), struct.get("pvserial") + 20);
     int pvstatus = Integer.valueOf(result.substring(struct.get("pvstatus"), struct.get("pvstatus") + 4), 16);
@@ -207,6 +193,24 @@ public class JpcCollectorVerticle extends AbstractVerticle {
       + "\npv1current: " + pv1current + "\npv1watt: " + pv1watt + "\npv2voltage: " + pv2voltage + "\npv2current: " + pv2current + "\npv2watt: " + pv2watt
       + "\npvpowerout: " + pvpowerout + "\npvfrequency: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
       + "\npvenergytotal: " + pvenergytotal + "\npvtemperature: " + pvtemperature + "\npvipmtemperature: " + pvipmtemperature);
+  }
+
+  private String unscramble(byte[] bytes) {
+    StringBuilder uss = new StringBuilder();
+    // Do not unscramble the first 8 positions.
+    for (int i = 0; i < 8; i++) {
+      uss.append(String.format("%02X", bytes[i]));
+    }
+    for (int i = 8, j = 0; i < bytes.length; i++, j++) {
+      if (j == mask.length) {
+        j = 0;
+      }
+      // Unscramble means: take the mask at a particular position and invoke an xor against the data at a specific position.
+      // TODO: Now the logging as well as this processing iterate the buffer and do the same. Make sure this happens only once.
+      uss.append(String.format("%02X", (Byte.toUnsignedInt(bytes[i])) ^ (byte) mask[j]));
+    }
+
+    return uss.toString();
   }
 
   private void logAsHexString(String uuid, byte[] bytes, int bufferLength) {
