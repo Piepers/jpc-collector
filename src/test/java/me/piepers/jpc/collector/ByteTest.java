@@ -95,7 +95,7 @@ public class ByteTest {
     // Note: the scructure below is identical to the 0104 but the date seems to be present here.
     Map<String, Integer> struct0150 = new HashMap<>() {{
       put("pvserial", 76);
-      put("date", 0);
+      put("date", 136);
       put("pvstatus", 158);
       put("pvpowerin", 162);
       put("pv1voltage", 170);
