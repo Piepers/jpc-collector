@@ -1,11 +1,14 @@
 package me.piepers.jpc.collector;
 
+import io.reactivex.Completable;
+import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -82,11 +85,17 @@ public class NetSocketConnection {
 
         netSocket.handler(this::handleBuffer);
         netSocket.exceptionHandler(this::handleException);
-        netSocket.closeHandler(v -> this.logAddresses("closed"));
+        netSocket.closeHandler(v -> this.handleConnectionClose());
     }
 
-    private void handleException(Throwable throwable) {
-        LOGGER.error("Something went wrong.", throwable);
+    private void handleConnectionClose() {
+        this.logAddresses("closed");
+
+        this.vertx
+                .eventBus()
+                .publish(publishAddress, new JsonObject()
+                        .put("message", "closed")
+                        .put("id", this.id));
     }
 
     public static NetSocketConnection with(String id, NetSocket netSocket, Vertx vertx, String publishAddress) {
@@ -95,6 +104,30 @@ public class NetSocketConnection {
         NetSocketConnection netSocketConnection = new NetSocketConnection(id, netSocket, now, now, vertx, publishAddress);
         netSocketConnection.logAddresses("established");
         return netSocketConnection;
+    }
+
+    /**
+     * Given a date and time, checks whether the last seen is past the duration that it is allowed to be inactive.
+     *
+     * @param allowed, the allowed time between which a connection can be active (based on "lastSeen") and the time
+     *                 they must be decommissioned.
+     * @param from,    the time to start counting from.
+     * @return true in case the connection can be deemed stale or false otherwise.
+     */
+    public boolean isStaleConnectionSuspect(Duration allowed, LocalDateTime from) {
+        return Objects.nonNull(this.lastActive) &&
+                this.lastActive.isBefore(from) &&
+                Duration.between(this.lastActive, from)
+                        .compareTo(allowed) > 0;
+    }
+
+    public Completable closeConnection() {
+        return this.netSocket
+                .rxClose();
+    }
+
+    private void handleException(Throwable throwable) {
+        LOGGER.error("Something went wrong.", throwable);
     }
 
     private void handleBuffer(Buffer buffer) {
