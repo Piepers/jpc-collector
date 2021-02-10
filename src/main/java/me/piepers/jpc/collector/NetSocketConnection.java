@@ -74,7 +74,7 @@ public class NetSocketConnection {
 
     private static final char[] MASK = {'G', 'r', 'o', 'w', 'a', 't', 't'};
 
-    private NetSocketConnection(String id, NetSocket netSocket, LocalDateTime created, LocalDateTime lastActive,
+    protected NetSocketConnection(String id, NetSocket netSocket, LocalDateTime created, LocalDateTime lastActive,
                                 Vertx vertx, String publishAddress) {
         this.id = id;
         this.netSocket = netSocket;
@@ -86,16 +86,6 @@ public class NetSocketConnection {
         netSocket.handler(this::handleBuffer);
         netSocket.exceptionHandler(this::handleException);
         netSocket.closeHandler(v -> this.handleConnectionClose());
-    }
-
-    private void handleConnectionClose() {
-        this.logAddresses("closed");
-
-        this.vertx
-                .eventBus()
-                .publish(publishAddress, new JsonObject()
-                        .put("message", "closed")
-                        .put("id", this.id));
     }
 
     public static NetSocketConnection with(String id, NetSocket netSocket, Vertx vertx, String publishAddress) {
@@ -119,6 +109,16 @@ public class NetSocketConnection {
                 this.lastActive.isBefore(from) &&
                 Duration.between(this.lastActive, from)
                         .compareTo(allowed) > 0;
+    }
+
+    private void handleConnectionClose() {
+        this.logAddresses("closed");
+
+        this.vertx
+                .eventBus()
+                .publish(publishAddress, new JsonObject()
+                        .put("message", "closed")
+                        .put("id", this.id));
     }
 
     public Completable closeConnection() {
