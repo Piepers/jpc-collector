@@ -13,10 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * A simple verticle that listens to a port and receives incoming packets and appends it to a log file.
@@ -50,7 +49,29 @@ public class JpcCollectorVerticle extends AbstractVerticle {
                 .<JsonObject>consumer(CLOSED_CONNECTION_PUBLISH_ADDRESS)
                 .handler(this::handleClosedConnection);
 
+        this.vertx
+                .eventBus()
+                .<JsonObject>consumer("get.connections",
+                        message -> this.compileConnectionsReply(message));
         this.setupConnectionChecker();
+    }
+
+    private void compileConnectionsReply(Message<JsonObject> message) {
+        if (Objects.isNull(this.connections) || this.connections.isEmpty()) {
+            message.reply(new JsonObject());
+        } else {
+            List<JsonObject> result = this.connections
+                    .values()
+                    .stream()
+                    .<JsonObject>map(netSocketConnection ->
+                            new JsonObject()
+                                    .put("id", netSocketConnection.getId())
+                                    .put("lastActive", netSocketConnection.getLastActive().toString())
+                                    .put("created", netSocketConnection.getCreated().toString()))
+                    .collect(Collectors.toList());
+
+            message.reply(new JsonObject().put("count", result.size()).put("items", result));
+        }
     }
 
     private void setupConnectionChecker() {

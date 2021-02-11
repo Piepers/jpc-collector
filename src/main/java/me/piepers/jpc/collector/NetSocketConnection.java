@@ -25,9 +25,10 @@ public class NetSocketConnection {
     private static final Logger DATA_LOGGER = LoggerFactory.getLogger("jpc-logger-data");
 
     private final String id;
-    private final NetSocket netSocket;
     private final LocalDateTime created;
     private LocalDateTime lastActive;
+
+    private final NetSocket netSocket;
     private final Vertx vertx;
     private final String publishAddress;
 
@@ -75,7 +76,7 @@ public class NetSocketConnection {
     private static final char[] MASK = {'G', 'r', 'o', 'w', 'a', 't', 't'};
 
     protected NetSocketConnection(String id, NetSocket netSocket, LocalDateTime created, LocalDateTime lastActive,
-                                Vertx vertx, String publishAddress) {
+                                  Vertx vertx, String publishAddress) {
         this.id = id;
         this.netSocket = netSocket;
         this.created = created;
@@ -122,6 +123,7 @@ public class NetSocketConnection {
     }
 
     public Completable closeConnection() {
+        LOGGER.debug("Closing connection with id {} because last activity was too long ago ({}).", id, lastActive.toString());
         return this.netSocket
                 .rxClose();
     }
@@ -132,6 +134,7 @@ public class NetSocketConnection {
 
     private void handleBuffer(Buffer buffer) {
         this.lastActive = LocalDateTime.now();
+
         byte[] bytes = buffer.getBytes();
         int l = buffer.length();
         String uuid = UUID.randomUUID().toString();
