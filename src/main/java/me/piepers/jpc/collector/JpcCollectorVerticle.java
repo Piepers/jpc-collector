@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +28,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     private static final long ORPHANED_CONNECTION_INTERVAL = TimeUnit.MINUTES.toMillis(60);
     // The time a connection "is allowed" to be inactive.
     private static final long STALE_CONNECTION_TIMEOUT_MINUTES = 30;
-    private long timerId;
+    private AtomicLong timerId;
     private NetServer server;
     private Map<String, NetSocketConnection> connections;
 
@@ -53,7 +54,8 @@ public class JpcCollectorVerticle extends AbstractVerticle {
                 .eventBus()
                 .<JsonObject>consumer("get.connections",
                         message -> this.compileConnectionsReply(message));
-        this.setupConnectionChecker();
+
+        this.timerId = new AtomicLong(0L);
     }
 
     private void compileConnectionsReply(Message<JsonObject> message) {
@@ -75,9 +77,11 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     }
 
     private void setupConnectionChecker() {
-        this.vertx
-                .setTimer(ORPHANED_CONNECTION_INTERVAL,
-                        handler -> this.checkForStaleConnections());
+        if (this.timerId.get() == 0L) {
+            this.timerId.set(this.vertx
+                    .setTimer(ORPHANED_CONNECTION_INTERVAL,
+                            handler -> this.checkForStaleConnections()));
+        }
     }
 
     private void checkForStaleConnections() {
@@ -90,6 +94,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
                         .isStaleConnectionSuspect(Duration.ofMinutes(STALE_CONNECTION_TIMEOUT_MINUTES), now))
                 .flatMapCompletable(connection -> connection.closeConnection())
                 .doOnComplete(() -> LOGGER.debug("Check for stale connections completed."))
+                .doOnComplete(() -> this.timerId.set(0L))
                 .subscribe(() -> this.setupConnectionChecker(),
                         throwable -> LOGGER.error("Could not close connection.", throwable));
     }
@@ -109,5 +114,6 @@ public class JpcCollectorVerticle extends AbstractVerticle {
         NetSocketConnection netSocketConnection = NetSocketConnection.with(id, netSocket, this.vertx,
                 CLOSED_CONNECTION_PUBLISH_ADDRESS);
         this.connections.put(id, netSocketConnection);
+        this.setupConnectionChecker();
     }
 }
