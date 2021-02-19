@@ -74,4 +74,5 @@ public class NetSocketConnectionTest {
         // Then
         assertThat(result).isFalse();
     }
+
 }

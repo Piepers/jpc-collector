@@ -1,5 +1,6 @@
 package me.piepers.jpc.collector;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -77,7 +78,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     }
 
     private void setupConnectionChecker() {
-        if (this.timerId.get() == 0L) {
+        if (this.timerId.get() == 0L && !this.connections.isEmpty()) {
             this.timerId.set(this.vertx
                     .setTimer(ORPHANED_CONNECTION_INTERVAL,
                             handler -> this.checkForStaleConnections()));
@@ -93,8 +94,8 @@ public class JpcCollectorVerticle extends AbstractVerticle {
                 .filter(connection -> connection
                         .isStaleConnectionSuspect(Duration.ofMinutes(STALE_CONNECTION_TIMEOUT_MINUTES), now))
                 .flatMapCompletable(connection -> connection.closeConnection())
+                .andThen(Completable.fromAction(() -> this.timerId.set(0L)))
                 .doOnComplete(() -> LOGGER.debug("Check for stale connections completed."))
-                .doOnComplete(() -> this.timerId.set(0L))
                 .subscribe(() -> this.setupConnectionChecker(),
                         throwable -> LOGGER.error("Could not close connection.", throwable));
     }
