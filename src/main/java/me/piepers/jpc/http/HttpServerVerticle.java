@@ -27,7 +27,6 @@ public class HttpServerVerticle extends AbstractVerticle {
     @Override
     public void init(Vertx vertx, Context context) {
         super.init(vertx, context);
-        // TODO: make sure the configuration file in the resources dir gets loaded.
         JsonObject httpServerConfig = context.config().getJsonObject("http_server");
         this.port = Objects.nonNull(httpServerConfig) ? httpServerConfig.getInteger("port", DEFAULT_HTTP_PORT) : DEFAULT_HTTP_PORT;
     }

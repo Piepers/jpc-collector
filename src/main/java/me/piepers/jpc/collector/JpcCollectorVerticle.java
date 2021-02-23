@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class JpcCollectorVerticle extends AbstractVerticle {
     private static final Logger LOGGER = LoggerFactory.getLogger(JpcCollectorVerticle.class);
     private static final String CLOSED_CONNECTION_PUBLISH_ADDRESS = "jpc.collector";
+    private static final String METRICS_PUBLISH_ADDRESS = "jpc.collector.metrics";
     // Check for unclosed connections interval.
     private static final long ORPHANED_CONNECTION_INTERVAL = TimeUnit.MINUTES.toMillis(60);
     // The time a connection "is allowed" to be inactive.

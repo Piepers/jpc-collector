@@ -5,6 +5,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.net.NetSocket;
+import me.piepers.jpc.domain.GrowattDataMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,7 +185,7 @@ public class NetSocketConnection {
         }
         if (this.isData(bytes)) {
             // Extract the data first - TODO: this must all be async so map to something readable, extract data, send ACK.
-            this.extractData(bytes, uuid, localDateTime);
+            GrowattDataMessage growattDataMessage = this.extractData(bytes, uuid, localDateTime);
 
             // Now, send an acknowledge.
             LOGGER.debug("Data message detected. Sending ACK");
@@ -206,39 +207,18 @@ public class NetSocketConnection {
 
             netSocket
                     .rxWrite(Buffer.buffer(response))
+                    .andThen(this.vertx.eventBus().publish(""))
                     .doOnError(throwable -> throwable.printStackTrace())
                     .subscribe(() -> LOGGER.debug("ACK sent for data message."),
                             throwable -> LOGGER.error("Unable to sent ACK for data message due to: ", throwable));
         }
     }
 
-    private void extractData(byte[] bytes, String uuid, LocalDateTime localDateTime) {
+    private GrowattDataMessage extractData(byte[] bytes, String uuid, LocalDateTime localDateTime) {
         String result = this.unscramble(bytes);
-
-        // TODO: a more sophisticated way of detecting which function/record it is would be nice.
-        Map<String, Integer> struct = result.substring(12, 16).equals("0150") ? this.STRUCT0150 : this.STRUCT0104;
-
-        String pvserial = result.substring(struct.get("pvserial"), struct.get("pvserial") + 20);
-        int pvstatus = Integer.valueOf(result.substring(struct.get("pvstatus"), struct.get("pvstatus") + 4), 16);
-        Long pvpowerin = Long.parseLong(result.substring(struct.get("pvpowerin"), struct.get("pvpowerin") + 8), 16);
-        int pv1voltage = Integer.valueOf(result.substring(struct.get("pv1voltage"), struct.get("pv1voltage") + 4), 16);
-        int pv1current = Integer.valueOf(result.substring(struct.get("pv1current"), struct.get("pv1current") + 4), 16);
-        Long pv1watt = Long.parseLong(result.substring(struct.get("pv1watt"), struct.get("pv1watt") + 8), 16);
-        int pv2voltage = Integer.valueOf(result.substring(struct.get("pv2voltage"), struct.get("pv2voltage") + 4), 16);
-        int pv2current = Integer.valueOf(result.substring(struct.get("pv2current"), struct.get("pv2current") + 4), 16);
-        Long pv2watt = Long.parseLong(result.substring(struct.get("pv2watt"), struct.get("pv2watt") + 8), 16);
-        Long pvpowerout = Long.parseLong(result.substring(struct.get("pvpowerout"), struct.get("pvpowerout") + 8), 16);
-        int pvfrequentie = Integer.valueOf(result.substring(struct.get("pvfrequency"), struct.get("pvfrequency") + 4), 16);
-        int pvgridvoltage = Integer.valueOf(result.substring(struct.get("pvgridvoltage"), struct.get("pvgridvoltage") + 4), 16);
-        Long pvenergytoday = Long.parseLong(result.substring(struct.get("pvenergytoday"), struct.get("pvenergytoday") + 8), 16);
-        Long pvenergytotal = Long.parseLong(result.substring(struct.get("pvenergytotal"), struct.get("pvenergytotal") + 8), 16);
-        int pvtemperature = Integer.valueOf(result.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16);
-        int pvipmtemperature = Integer.valueOf(result.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16);
-
-        DATA_LOGGER.debug("hex decrypted: " + result + "\nuuid: " + uuid + "\ndate/time: " + localDateTime + "\npvserial: " + pvserial + "\npvstatus: " + pvstatus + "\npvpowerin: " + pvpowerin + "\npv1voltage: " + pv1voltage
-                + "\npv1current: " + pv1current + "\npv1watt: " + pv1watt + "\npv2voltage: " + pv2voltage + "\npv2current: " + pv2current + "\npv2watt: " + pv2watt
-                + "\npvpowerout: " + pvpowerout + "\npvfrequency: " + pvfrequentie + "\npvgridvoltage: " + pvgridvoltage + "\npvenergytoday: " + pvenergytoday
-                + "\npvenergytotal: " + pvenergytotal + "\npvtemperature: " + pvtemperature + "\npvipmtemperature: " + pvipmtemperature);
+        GrowattDataMessage growattDataMessage = GrowattDataMessage.from(uuid, localDateTime, result);
+        DATA_LOGGER.debug(growattDataMessage.asFormattedString(result));
+        return growattDataMessage;
     }
 
     private String unscramble(byte[] bytes) {
