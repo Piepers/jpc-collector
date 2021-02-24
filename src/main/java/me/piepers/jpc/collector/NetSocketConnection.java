@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -31,7 +32,8 @@ public class NetSocketConnection {
 
     private final NetSocket netSocket;
     private final Vertx vertx;
-    private final String publishAddress;
+    private final String closedConnectionPublishAddress;
+    private final String dataPublishAddress;
 
     static Map<String, Integer> STRUCT0104 = new HashMap<>() {{
         put("pvserial", 76);
@@ -77,23 +79,24 @@ public class NetSocketConnection {
     private static final char[] MASK = {'G', 'r', 'o', 'w', 'a', 't', 't'};
 
     protected NetSocketConnection(String id, NetSocket netSocket, LocalDateTime created, LocalDateTime lastActive,
-                                  Vertx vertx, String publishAddress) {
+                                  Vertx vertx, String closedConnectionPublishAddress, String dataPublishAddress) {
         this.id = id;
         this.netSocket = netSocket;
         this.created = created;
         this.lastActive = lastActive;
         this.vertx = vertx;
-        this.publishAddress = publishAddress;
+        this.closedConnectionPublishAddress = closedConnectionPublishAddress;
+        this.dataPublishAddress = dataPublishAddress;
 
         netSocket.handler(this::handleBuffer);
         netSocket.exceptionHandler(this::handleException);
         netSocket.closeHandler(v -> this.handleConnectionClose());
     }
 
-    public static NetSocketConnection with(String id, NetSocket netSocket, Vertx vertx, String publishAddress) {
+    public static NetSocketConnection with(String id, NetSocket netSocket, Vertx vertx, String closedConnectionPublishAddress, String dataPublishAddress) {
         LocalDateTime now = LocalDateTime.now();
 
-        NetSocketConnection netSocketConnection = new NetSocketConnection(id, netSocket, now, now, vertx, publishAddress);
+        NetSocketConnection netSocketConnection = new NetSocketConnection(id, netSocket, now, now, vertx, closedConnectionPublishAddress, dataPublishAddress);
         netSocketConnection.logAddresses("established");
         return netSocketConnection;
     }
@@ -118,7 +121,7 @@ public class NetSocketConnection {
 
         this.vertx
                 .eventBus()
-                .publish(publishAddress, new JsonObject()
+                .publish(closedConnectionPublishAddress, new JsonObject()
                         .put("message", "closed")
                         .put("id", this.id));
     }
@@ -139,7 +142,7 @@ public class NetSocketConnection {
         byte[] bytes = buffer.getBytes();
         int l = buffer.length();
         String uuid = UUID.randomUUID().toString();
-        LocalDateTime localDateTime = LocalDateTime.now();
+        Instant localDateTime = Instant.now();
 
         JPC_LOGGER_S.debug("{} | {} | {}", l, uuid, buffer.toString());
         JPC_LOGGER_BTE.debug("{} | {} | {}", l, uuid, bytes);
@@ -207,16 +210,17 @@ public class NetSocketConnection {
 
             netSocket
                     .rxWrite(Buffer.buffer(response))
-                    .andThen(this.vertx.eventBus().publish(""))
+                    .andThen(Completable.fromAction(() -> this.vertx.eventBus().publish(dataPublishAddress, JsonObject.mapFrom(growattDataMessage))))
+                    .doOnError(throwable -> LOGGER.error("Something went wrong when publishing the data message to the event bus.", throwable))
                     .doOnError(throwable -> throwable.printStackTrace())
-                    .subscribe(() -> LOGGER.debug("ACK sent for data message."),
-                            throwable -> LOGGER.error("Unable to sent ACK for data message due to: ", throwable));
+                    .subscribe(() -> LOGGER.debug("ACK sent and data published."),
+                            throwable -> LOGGER.error("Unable to sent ACK for data message and publish to event bus due to: ", throwable));
         }
     }
 
-    private GrowattDataMessage extractData(byte[] bytes, String uuid, LocalDateTime localDateTime) {
+    private GrowattDataMessage extractData(byte[] bytes, String uuid, Instant instant) {
         String result = this.unscramble(bytes);
-        GrowattDataMessage growattDataMessage = GrowattDataMessage.from(uuid, localDateTime, result);
+        GrowattDataMessage growattDataMessage = GrowattDataMessage.from(uuid, instant, result);
         DATA_LOGGER.debug(growattDataMessage.asFormattedString(result));
         return growattDataMessage;
     }
@@ -328,8 +332,8 @@ public class NetSocketConnection {
         return vertx;
     }
 
-    public String getPublishAddress() {
-        return publishAddress;
+    public String getClosedConnectionPublishAddress() {
+        return closedConnectionPublishAddress;
     }
 
     @Override
@@ -352,7 +356,7 @@ public class NetSocketConnection {
                 ", created=" + created +
                 ", lastActive=" + lastActive +
                 ", vertx=" + vertx +
-                ", publishAddress='" + publishAddress + '\'' +
+                ", publishAddress='" + closedConnectionPublishAddress + '\'' +
                 '}';
     }
 }

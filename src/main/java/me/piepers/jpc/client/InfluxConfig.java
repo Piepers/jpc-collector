@@ -9,13 +9,15 @@ public class InfluxConfig implements Jsonable {
     private final String token;
     private final String bucketName;
     private final String organization;
+    private final String protocol;
     private final String host;
     private final int port;
 
-    public InfluxConfig(String token, String bucketName, String organization, String host, int port) {
+    public InfluxConfig(String token, String bucketName, String organization, String protocol, String host, int port) {
         this.token = token;
         this.bucketName = bucketName;
         this.organization = organization;
+        this.protocol = protocol;
         this.host = host;
         this.port = port;
     }
@@ -24,6 +26,7 @@ public class InfluxConfig implements Jsonable {
         this.token = jsonObject.getString("token");
         this.bucketName = jsonObject.getString("bucketName");
         this.organization = jsonObject.getString("organization");
+        this.protocol = jsonObject.getString("protocol");
         this.host = jsonObject.getString("host");
         this.port = jsonObject.getInteger("port");
     }
@@ -32,10 +35,11 @@ public class InfluxConfig implements Jsonable {
         JsonObject influxConfig = config.getJsonObject("influx-client");
         var token = influxConfig.getString("token");
         var bucketName = influxConfig.getString("bucketName");
+        var protocol = influxConfig.getString("protocol");
         var organization = influxConfig.getString("organization");
         var host = influxConfig.getString("host");
         var port = influxConfig.getInteger("port");
-        return new InfluxConfig(token, bucketName, organization, host, port);
+        return new InfluxConfig(token, bucketName, organization, protocol, host, port);
     }
 
     public String getToken() {
@@ -58,6 +62,10 @@ public class InfluxConfig implements Jsonable {
         return port;
     }
 
+    public String getProtocol() {
+        return protocol;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -69,6 +77,7 @@ public class InfluxConfig implements Jsonable {
         if (!token.equals(that.token)) return false;
         if (!bucketName.equals(that.bucketName)) return false;
         if (!organization.equals(that.organization)) return false;
+        if (!protocol.equals(that.protocol)) return false;
         return host.equals(that.host);
     }
 
@@ -77,6 +86,7 @@ public class InfluxConfig implements Jsonable {
         int result = token.hashCode();
         result = 31 * result + bucketName.hashCode();
         result = 31 * result + organization.hashCode();
+        result = 31 * result + protocol.hashCode();
         result = 31 * result + host.hashCode();
         result = 31 * result + port;
         return result;
@@ -88,6 +98,7 @@ public class InfluxConfig implements Jsonable {
                 "token='" + token + '\'' +
                 ", bucketName='" + bucketName + '\'' +
                 ", organization='" + organization + '\'' +
+                ", protocol='" + protocol + '\'' +
                 ", host='" + host + '\'' +
                 ", port=" + port +
                 '}';

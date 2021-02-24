@@ -1,12 +1,13 @@
 package me.piepers.jpc.domain;
 
+import com.influxdb.annotations.Column;
+import com.influxdb.annotations.Measurement;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Represents a data message. Message types in Growatt are indicated by a hexadecimal number. This particular class
@@ -17,8 +18,9 @@ import java.util.UUID;
  * <p>
  * This instance is also capable of mapping a hexadecimal string to an instance of this class.
  */
+@Measurement(name = "yield")
 @DataObject
-public class GrowattDataMessage {
+public class GrowattDataMessage implements Jsonable {
 
     static Map<String, Integer> STRUCT0104 = new HashMap<>() {{
         put("pvserial", 76);
@@ -61,27 +63,45 @@ public class GrowattDataMessage {
         put("pvipmtemperature", 322);
     }};
 
+    @Column
     private final String id;
-    private final LocalDateTime received;
+    @Column(timestamp = true)
+    private final Instant received;
+    @Column(tag = true)
     private final String pvSerial;
+    @Column
     private final PvStatus pvStatus;
+    @Column
     private final float pvPowerIn;
+    @Column
     private final float pv1Voltage;
+    @Column
     private final float pv1Current;
+    @Column
     private final float pv1Watt;
+    @Column
     private final float pv2Voltage;
+    @Column
     private final float pv2Current;
+    @Column
     private final float pv2Watt;
+    @Column
     private final float pvPowerOut;
+    @Column
     private final float pvFrequency;
+    @Column
     private final float pvGridVoltage;
+    @Column
     private final float pvEnergyToday;
+    @Column
     private final double pvEnergyTotal;
+    @Column
     private final float pvTemperature;
+    @Column
     private final float pvIpmTemperature;
 
 
-    public GrowattDataMessage(String id, LocalDateTime received, String pvSerial, PvStatus pvStatus, float pvPowerIn,
+    public GrowattDataMessage(String id, Instant received, String pvSerial, PvStatus pvStatus, float pvPowerIn,
                               float pv1Voltage, float pv1Current, float pv1Watt, float pv2Voltage, float pv2Current,
                               float pv2Watt, float pvPowerOut, float pvFrequency, float pvGridVoltage,
                               float pvEnergyToday, double pvEnergyTotal, float pvTemperature, float pvIpmTemperature) {
@@ -107,9 +127,9 @@ public class GrowattDataMessage {
 
     public GrowattDataMessage(JsonObject jsonObject) {
         this.id = jsonObject.getString("id");
-        this.received = LocalDateTime.parse(jsonObject.getString("received"));
+        this.received = Instant.parse(jsonObject.getString("received"));
         this.pvSerial = jsonObject.getString("pvSerial");
-        this.pvStatus = PvStatus.resolve(jsonObject.getInteger("status"));
+        this.pvStatus = PvStatus.resolve(jsonObject.getString("pvStatus"));
         this.pvPowerIn = jsonObject.getFloat("pvPowerIn");
         this.pv1Voltage = jsonObject.getFloat("pv1Voltage");
         this.pv1Current = jsonObject.getFloat("pv1Current");
@@ -129,12 +149,12 @@ public class GrowattDataMessage {
     /**
      * A mapper that expects an unscrambled hexadecimal String with all the contents for that message.
      *
-     * @param dataString,    the string with the unscrambled contents of the message.
-     * @param id,            the id to take for this message.
-     * @param localDateTime, the timestamp of the message.
+     * @param dataString, the string with the unscrambled contents of the message.
+     * @param id,         the id to take for this message.
+     * @param instant,    the timestamp of the message.
      * @return an instance of this object so that it can be processed further.
      */
-    public static GrowattDataMessage from(String id, LocalDateTime localDateTime, String dataString) {
+    public static GrowattDataMessage from(String id, Instant instant, String dataString) {
         // TODO: a more sophisticated way of detecting which function/record it is would be nice.
         Map<String, Integer> struct = dataString.substring(12, 16).equals("0150") ? STRUCT0150 : STRUCT0104;
 
@@ -155,7 +175,7 @@ public class GrowattDataMessage {
         float pvtemperature = (Integer.valueOf(dataString.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16)) / 10;
         float pvipmtemperature = (Integer.valueOf(dataString.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16)) / 10;
 
-        return new GrowattDataMessage(id, localDateTime, pvserial, PvStatus.resolve(pvstatus), pvpowerin,
+        return new GrowattDataMessage(id, instant, pvserial, PvStatus.resolve(pvstatus), pvpowerin,
                 pv1voltage, pv1current, pv1watt, pv2voltage, pv2current, pv2watt, pvpowerout, pvfrequency,
                 pvgridvoltage, pvenergytoday, pvenergytotal, pvtemperature, pvipmtemperature);
     }
@@ -164,7 +184,7 @@ public class GrowattDataMessage {
         return id;
     }
 
-    public LocalDateTime getReceived() {
+    public Instant getReceived() {
         return received;
     }
 
@@ -228,7 +248,7 @@ public class GrowattDataMessage {
         return pvTemperature;
     }
 
-    public float getIpmTemperature() {
+    public float getPvIpmTemperature() {
         return pvIpmTemperature;
     }
 

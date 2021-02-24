@@ -114,7 +114,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
     private void handleConnection(NetSocket netSocket) {
         String id = UUID.randomUUID().toString();
         NetSocketConnection netSocketConnection = NetSocketConnection.with(id, netSocket, this.vertx,
-                CLOSED_CONNECTION_PUBLISH_ADDRESS);
+                CLOSED_CONNECTION_PUBLISH_ADDRESS, METRICS_PUBLISH_ADDRESS);
         this.connections.put(id, netSocketConnection);
         this.setupConnectionChecker();
     }

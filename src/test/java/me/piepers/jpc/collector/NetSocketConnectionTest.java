@@ -39,7 +39,7 @@ public class NetSocketConnectionTest {
     public void test_that_when_duration_has_passed_that_connection_is_deemed_stale() {
         // Given
         when(this.netSocket.getDelegate()).thenReturn(mock(io.vertx.core.net.NetSocket.class));
-        netSocketConnection = NetSocketConnection.with("1", this.netSocket, this.vertx, "test");
+        netSocketConnection = NetSocketConnection.with("1", this.netSocket, this.vertx, "test", "data");
 
         // When
         var result = netSocketConnection.isStaleConnectionSuspect(Duration.ofMinutes(1), LocalDateTime.now().plusMinutes(2));
@@ -52,7 +52,7 @@ public class NetSocketConnectionTest {
     public void test_that_when_duration_has_not_passed_that_connection_is_not_deemed_stale() {
         // Given
         when(this.netSocket.getDelegate()).thenReturn(mock(io.vertx.core.net.NetSocket.class));
-        netSocketConnection = NetSocketConnection.with("1", this.netSocket, this.vertx, "test");
+        netSocketConnection = NetSocketConnection.with("1", this.netSocket, this.vertx, "test", "data");
 
         // When
         var result = netSocketConnection.isStaleConnectionSuspect(Duration.ofHours(1), LocalDateTime.now());
@@ -66,7 +66,7 @@ public class NetSocketConnectionTest {
     public void test_that_if_times_are_switched_that_connection_is_not_stale() {
         // Given
         var past = LocalDateTime.now();
-        netSocketConnection = new NetSocketConnection("1", this.netSocket, past, past, this.vertx, "test");
+        netSocketConnection = new NetSocketConnection("1", this.netSocket, past, past, this.vertx, "test", "data");
 
         // When
         var result = netSocketConnection.isStaleConnectionSuspect(Duration.ofHours(1), LocalDateTime.now().minusHours(2));

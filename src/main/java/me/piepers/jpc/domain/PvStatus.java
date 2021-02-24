@@ -24,6 +24,14 @@ public enum PvStatus {
                 .orElse(UNKNOWN);
     }
 
+    public static PvStatus resolve(String name){
+        return Arrays
+                .stream(PvStatus.values())
+                .filter(value -> value.name().equals(name))
+                .findFirst()
+                .orElse(UNKNOWN);
+    }
+
     public int getCode() {
         return code;
     }
