@@ -72,39 +72,39 @@ public class GrowattDataMessage implements Jsonable {
     @Column
     private final PvStatus pvStatus;
     @Column
-    private final float pvPowerIn;
+    private final double pvPowerIn;
     @Column
-    private final float pv1Voltage;
+    private final double pv1Voltage;
     @Column
-    private final float pv1Current;
+    private final double pv1Current;
     @Column
-    private final float pv1Watt;
+    private final double pv1Watt;
     @Column
-    private final float pv2Voltage;
+    private final double pv2Voltage;
     @Column
-    private final float pv2Current;
+    private final double pv2Current;
     @Column
-    private final float pv2Watt;
+    private final double pv2Watt;
     @Column
-    private final float pvPowerOut;
+    private final double pvPowerOut;
     @Column
-    private final float pvFrequency;
+    private final double pvFrequency;
     @Column
-    private final float pvGridVoltage;
+    private final double pvGridVoltage;
     @Column
-    private final float pvEnergyToday;
+    private final double pvEnergyToday;
     @Column
     private final double pvEnergyTotal;
     @Column
-    private final float pvTemperature;
+    private final double pvTemperature;
     @Column
-    private final float pvIpmTemperature;
+    private final double pvIpmTemperature;
 
 
-    public GrowattDataMessage(String id, Instant received, String pvSerial, PvStatus pvStatus, float pvPowerIn,
-                              float pv1Voltage, float pv1Current, float pv1Watt, float pv2Voltage, float pv2Current,
-                              float pv2Watt, float pvPowerOut, float pvFrequency, float pvGridVoltage,
-                              float pvEnergyToday, double pvEnergyTotal, float pvTemperature, float pvIpmTemperature) {
+    public GrowattDataMessage(String id, Instant received, String pvSerial, PvStatus pvStatus, double pvPowerIn,
+                              double pv1Voltage, double pv1Current, double pv1Watt, double pv2Voltage, double pv2Current,
+                              double pv2Watt, double pvPowerOut, double pvFrequency, double pvGridVoltage,
+                              double pvEnergyToday, double pvEnergyTotal, double pvTemperature, double pvIpmTemperature) {
         this.id = id;
         this.received = received;
         this.pvSerial = pvSerial;
@@ -130,20 +130,20 @@ public class GrowattDataMessage implements Jsonable {
         this.received = Instant.parse(jsonObject.getString("received"));
         this.pvSerial = jsonObject.getString("pvSerial");
         this.pvStatus = PvStatus.resolve(jsonObject.getString("pvStatus"));
-        this.pvPowerIn = jsonObject.getFloat("pvPowerIn");
-        this.pv1Voltage = jsonObject.getFloat("pv1Voltage");
-        this.pv1Current = jsonObject.getFloat("pv1Current");
-        this.pv1Watt = jsonObject.getFloat("pv1Watt");
-        this.pv2Voltage = jsonObject.getFloat("pv2Voltage");
-        this.pv2Current = jsonObject.getFloat("pv2Current");
-        this.pv2Watt = jsonObject.getFloat("pv2Watt");
-        this.pvPowerOut = jsonObject.getFloat("pvPowerOut");
-        this.pvFrequency = jsonObject.getFloat("pvFrequency");
-        this.pvGridVoltage = jsonObject.getFloat("pvGridVoltage");
-        this.pvEnergyToday = jsonObject.getFloat("pvEnergyToday");
+        this.pvPowerIn = jsonObject.getDouble("pvPowerIn");
+        this.pv1Voltage = jsonObject.getDouble("pv1Voltage");
+        this.pv1Current = jsonObject.getDouble("pv1Current");
+        this.pv1Watt = jsonObject.getDouble("pv1Watt");
+        this.pv2Voltage = jsonObject.getDouble("pv2Voltage");
+        this.pv2Current = jsonObject.getDouble("pv2Current");
+        this.pv2Watt = jsonObject.getDouble("pv2Watt");
+        this.pvPowerOut = jsonObject.getDouble("pvPowerOut");
+        this.pvFrequency = jsonObject.getDouble("pvFrequency");
+        this.pvGridVoltage = jsonObject.getDouble("pvGridVoltage");
+        this.pvEnergyToday = jsonObject.getDouble("pvEnergyToday");
         this.pvEnergyTotal = jsonObject.getDouble("pvEnergyTotal");
-        this.pvTemperature = jsonObject.getFloat("pvTemperature");
-        this.pvIpmTemperature = jsonObject.getFloat("pvIpmTemperature");
+        this.pvTemperature = jsonObject.getDouble("pvTemperature");
+        this.pvIpmTemperature = jsonObject.getDouble("pvIpmTemperature");
     }
 
     /**
@@ -160,20 +160,20 @@ public class GrowattDataMessage implements Jsonable {
 
         String pvserial = dataString.substring(struct.get("pvserial"), struct.get("pvserial") + 20);
         int pvstatus = Integer.valueOf(dataString.substring(struct.get("pvstatus"), struct.get("pvstatus") + 4), 16);
-        float pvpowerin = (Long.parseLong(dataString.substring(struct.get("pvpowerin"), struct.get("pvpowerin") + 8), 16)) / 10;
-        float pv1voltage = (Integer.valueOf(dataString.substring(struct.get("pv1voltage"), struct.get("pv1voltage") + 4), 16)) / 10;
-        float pv1current = (Integer.valueOf(dataString.substring(struct.get("pv1current"), struct.get("pv1current") + 4), 16)) / 10;
-        float pv1watt = (Long.parseLong(dataString.substring(struct.get("pv1watt"), struct.get("pv1watt") + 8), 16)) / 10;
-        float pv2voltage = (Integer.valueOf(dataString.substring(struct.get("pv2voltage"), struct.get("pv2voltage") + 4), 16)) / 10;
-        float pv2current = (Integer.valueOf(dataString.substring(struct.get("pv2current"), struct.get("pv2current") + 4), 16)) / 10;
-        float pv2watt = (Long.parseLong(dataString.substring(struct.get("pv2watt"), struct.get("pv2watt") + 8), 16)) / 10;
-        float pvpowerout = (Long.parseLong(dataString.substring(struct.get("pvpowerout"), struct.get("pvpowerout") + 8), 16)) / 10;
-        float pvfrequency = (Integer.valueOf(dataString.substring(struct.get("pvfrequency"), struct.get("pvfrequency") + 4), 16)) / 10;
-        float pvgridvoltage = (Integer.valueOf(dataString.substring(struct.get("pvgridvoltage"), struct.get("pvgridvoltage") + 4), 16)) / 10;
-        float pvenergytoday = (Long.parseLong(dataString.substring(struct.get("pvenergytoday"), struct.get("pvenergytoday") + 8), 16)) / 10;
+        double pvpowerin = (Long.parseLong(dataString.substring(struct.get("pvpowerin"), struct.get("pvpowerin") + 8), 16)) / 10;
+        double pv1voltage = (Integer.valueOf(dataString.substring(struct.get("pv1voltage"), struct.get("pv1voltage") + 4), 16)) / 10;
+        double pv1current = (Integer.valueOf(dataString.substring(struct.get("pv1current"), struct.get("pv1current") + 4), 16)) / 10;
+        double pv1watt = (Long.parseLong(dataString.substring(struct.get("pv1watt"), struct.get("pv1watt") + 8), 16)) / 10;
+        double pv2voltage = (Integer.valueOf(dataString.substring(struct.get("pv2voltage"), struct.get("pv2voltage") + 4), 16)) / 10;
+        double pv2current = (Integer.valueOf(dataString.substring(struct.get("pv2current"), struct.get("pv2current") + 4), 16)) / 10;
+        double pv2watt = (Long.parseLong(dataString.substring(struct.get("pv2watt"), struct.get("pv2watt") + 8), 16)) / 10;
+        double pvpowerout = (Long.parseLong(dataString.substring(struct.get("pvpowerout"), struct.get("pvpowerout") + 8), 16)) / 10;
+        double pvfrequency = (Integer.valueOf(dataString.substring(struct.get("pvfrequency"), struct.get("pvfrequency") + 4), 16)) / 10;
+        double pvgridvoltage = (Integer.valueOf(dataString.substring(struct.get("pvgridvoltage"), struct.get("pvgridvoltage") + 4), 16)) / 10;
+        double pvenergytoday = (Long.parseLong(dataString.substring(struct.get("pvenergytoday"), struct.get("pvenergytoday") + 8), 16)) / 10;
         double pvenergytotal = (Long.parseLong(dataString.substring(struct.get("pvenergytotal"), struct.get("pvenergytotal") + 8), 16)) / 10;
-        float pvtemperature = (Integer.valueOf(dataString.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16)) / 10;
-        float pvipmtemperature = (Integer.valueOf(dataString.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16)) / 10;
+        double pvtemperature = (Integer.valueOf(dataString.substring(struct.get("pvtemperature"), struct.get("pvtemperature") + 4), 16)) / 10;
+        double pvipmtemperature = (Integer.valueOf(dataString.substring(struct.get("pvipmtemperature"), struct.get("pvipmtemperature") + 4), 16)) / 10;
 
         return new GrowattDataMessage(id, instant, pvserial, PvStatus.resolve(pvstatus), pvpowerin,
                 pv1voltage, pv1current, pv1watt, pv2voltage, pv2current, pv2watt, pvpowerout, pvfrequency,
@@ -196,47 +196,47 @@ public class GrowattDataMessage implements Jsonable {
         return pvStatus;
     }
 
-    public float getPvPowerIn() {
+    public double getPvPowerIn() {
         return pvPowerIn;
     }
 
-    public float getPv1Voltage() {
+    public double getPv1Voltage() {
         return pv1Voltage;
     }
 
-    public float getPv1Current() {
+    public double getPv1Current() {
         return pv1Current;
     }
 
-    public float getPv1Watt() {
+    public double getPv1Watt() {
         return pv1Watt;
     }
 
-    public float getPv2Voltage() {
+    public double getPv2Voltage() {
         return pv2Voltage;
     }
 
-    public float getPv2Current() {
+    public double getPv2Current() {
         return pv2Current;
     }
 
-    public float getPv2Watt() {
+    public double getPv2Watt() {
         return pv2Watt;
     }
 
-    public float getPvPowerOut() {
+    public double getPvPowerOut() {
         return pvPowerOut;
     }
 
-    public float getPvFrequency() {
+    public double getPvFrequency() {
         return pvFrequency;
     }
 
-    public float getPvGridVoltage() {
+    public double getPvGridVoltage() {
         return pvGridVoltage;
     }
 
-    public float getPvEnergyToday() {
+    public double getPvEnergyToday() {
         return pvEnergyToday;
     }
 
@@ -244,11 +244,11 @@ public class GrowattDataMessage implements Jsonable {
         return pvEnergyTotal;
     }
 
-    public float getPvTemperature() {
+    public double getPvTemperature() {
         return pvTemperature;
     }
 
-    public float getPvIpmTemperature() {
+    public double getPvIpmTemperature() {
         return pvIpmTemperature;
     }
 

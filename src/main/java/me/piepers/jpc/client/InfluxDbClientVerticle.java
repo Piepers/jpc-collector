@@ -4,6 +4,7 @@ import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
 import com.influxdb.client.WriteApi;
 import com.influxdb.client.domain.WritePrecision;
+import com.influxdb.client.write.events.WriteSuccessEvent;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -47,7 +48,12 @@ public class InfluxDbClientVerticle extends AbstractVerticle {
         // FIXME: must be able to deal with unresponsive influxdb, I/O and other related errors. Could be an Observable or Completable that autocloses (Completable.using?).
         try (WriteApi writeApi = client.getWriteApi()) {
             writeApi.writeMeasurement(this.influxConfig.getBucketName(), this.influxConfig.getOrganization(),
-                    WritePrecision.MS, new GrowattDataMessage(data));
+                    WritePrecision.S, new GrowattDataMessage(data));
+            writeApi.listenEvents(WriteSuccessEvent.class, event -> {
+
+                String d = event.getLineProtocol();
+                LOGGER.debug("Received success result of: {}", d);
+            });
         }
     }
 }
