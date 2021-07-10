@@ -32,7 +32,6 @@ public class InfluxDbClientTest {
             TestMeasurement tm = new TestMeasurement(UUID.randomUUID().toString(), in, "test-serial-1",
                     PvStatus.NORMAL, number, number, number, number, number, number, number, number, number, number,
                     number, number, number, number);
-//            System.out.println("Adding " + in);
             try (WriteApi writeApi = client.getWriteApi()) {
                 writeApi.writeMeasurement(bucket, org, WritePrecision.S, tm);
             }

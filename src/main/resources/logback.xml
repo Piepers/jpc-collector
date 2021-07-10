@@ -115,27 +115,27 @@
     </encoder>
   </appender>
 
-  <logger name="jpc-logger" level="DEBUG" additivity="false">
+  <logger name="jpc-logger" level="INFO" additivity="false">
     <appender-ref ref="JPCAPPENDER"/>
   </logger>
 
-  <logger name="jpc-logger-int" level="DEBUG" additivity="false">
+  <logger name="jpc-logger-int" level="INFO" additivity="false">
     <appender-ref ref="JPCAPPENDERI"/>
   </logger>
 
-  <logger name="jpc-logger-byte" level="DEBUG" additivity="false">
+  <logger name="jpc-logger-byte" level="INFO" additivity="false">
     <appender-ref ref="JPCAPPENDERB"/>
   </logger>
 
-  <logger name="jpc-logger-string" level="DEBUG" additivity="false">
+  <logger name="jpc-logger-string" level="INFO" additivity="false">
     <appender-ref ref="JPCAPPENDERS"/>
   </logger>
 
-  <logger name="jpc-logger-data" level="DEBUG" additivity="false">
+  <logger name="jpc-logger-data" level="INFO" additivity="false">
     <appender-ref ref="JPCAPPENDERD"/>
   </logger>
 
-  <logger name="me.piepers" level="DEBUG" additivity="false">
+  <logger name="me.piepers" level="INFO" additivity="false">
     <appender-ref ref="FILE" />
     <appender-ref ref="STDOUT" />
   </logger>
