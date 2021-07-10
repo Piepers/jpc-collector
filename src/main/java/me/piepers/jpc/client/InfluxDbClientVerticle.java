@@ -38,6 +38,7 @@ public class InfluxDbClientVerticle extends AbstractVerticle {
                 .eventBus()
                 .<JsonObject>consumer(METRICS_PUBLISH_ADDRESS,
                         message -> this.handleMetricsMessage(message.body()));
+        startFuture.complete();
     }
 
     private void handleMetricsMessage(JsonObject data) {

@@ -41,11 +41,11 @@ public class CollectorApplication extends AbstractVerticle {
 
         configRetriever
                 .rxGetConfig()
-                .flatMapCompletable(configuration -> Completable.fromAction(() -> LOGGER.debug("Deploying JPC Collector"))
+                .flatMapCompletable(configuration -> Completable.fromAction(() -> LOGGER.info("Deploying JPC Collector"))
                         .andThen(this.vertx.rxDeployVerticle(JpcCollectorVerticle.class.getName(), new DeploymentOptions().setConfig(configuration)).ignoreElement())
                         .andThen(this.vertx.rxDeployVerticle(HttpServerVerticle.class.getName(), new DeploymentOptions().setConfig(configuration)).ignoreElement())
                         .andThen(this.vertx.rxDeployVerticle(InfluxDbClientVerticle.class.getName(), new DeploymentOptions().setConfig(configuration)).ignoreElement()))
-                .doOnComplete(() -> LOGGER.debug("Application successfully deployed."))
+                .doOnComplete(() -> LOGGER.info("Application successfully deployed."))
                 .subscribe(() -> startFuture.complete(),
                         throwable -> startFuture.fail(throwable));
     }
