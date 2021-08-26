@@ -1,0 +1,18 @@
+[Unit]
+Description=JPC Collector Service
+[Service]
+User=bas
+# The configuration file application.properties should be here.
+
+# The working directory
+WorkingDirectory=/opt/jpc-collector
+
+ExecStart=/opt/jpc-collector/jpc-collector
+
+SuccessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

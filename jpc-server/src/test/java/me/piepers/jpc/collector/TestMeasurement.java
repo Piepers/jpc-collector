@@ -4,13 +4,10 @@ import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import me.piepers.jpc.domain.GrowattDataMessage;
 import me.piepers.jpc.domain.Jsonable;
 import me.piepers.jpc.domain.PvStatus;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 @Measurement(name = "yield")
 @DataObject

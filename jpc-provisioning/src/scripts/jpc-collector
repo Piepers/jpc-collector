@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/bin/java -jar collector-1.0.0-SNAPSHOT-fat.jar run me.piepers.jpc.CollectorApplication
