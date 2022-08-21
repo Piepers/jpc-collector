@@ -151,7 +151,7 @@ public class NetSocketConnection {
 
         if (this.isPingMessage(bytes)) {
             // The message appears to be a ping message. Just "echo" it.
-            LOGGER.debug("Echo'ing ping message.");
+            LOGGER.info("Echo'ing ping message.");
             netSocket
                     .rxWrite(buffer)
                     .doOnError(throwable -> throwable.printStackTrace())
@@ -160,7 +160,7 @@ public class NetSocketConnection {
         }
         if (this.isAnnounce(bytes)) {
             // Announce?
-            LOGGER.debug("Announce message detected. Sending ACK");
+            LOGGER.info("Announce message detected. Sending ACK");
             // Append the length, followed by the function (0x01 0x03) and an empty body (0x00)
             byte[] response = new byte[9];
             this.copyHeader(response, bytes);
@@ -191,7 +191,7 @@ public class NetSocketConnection {
             GrowattDataMessage growattDataMessage = this.extractData(bytes, uuid, localDateTime);
 
             // Now, send an acknowledge.
-            LOGGER.debug("Data message detected. Sending ACK");
+            LOGGER.info("Data message detected. Sending ACK");
             byte[] response = new byte[9];
             this.copyHeader(response, bytes);
 
@@ -275,9 +275,7 @@ public class NetSocketConnection {
         }
 
         // Copy the first 4 elements of the original message (this is the header of the message)
-        for (int i = 0; i < 4; i++) {
-            into[i] = bytes[i];
-        }
+        System.arraycopy(bytes, 0, into, 0, 4);
     }
 
     private boolean isData(byte[] bytes) {
@@ -307,7 +305,7 @@ public class NetSocketConnection {
 
     private void logAddresses(String event) {
         io.vertx.core.net.NetSocket delegate = this.netSocket.getDelegate();
-        LOGGER.debug("Connection with remote address {} and local address {} was {}.",
+        LOGGER.info("Connection with remote address {} and local address {} was {}.",
                 Objects.nonNull(delegate.remoteAddress()) ? delegate.remoteAddress().host() : "unknown",
                 Objects.nonNull(delegate.localAddress()) ? delegate.localAddress().host() : "unknown", event);
     }

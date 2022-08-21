@@ -28,8 +28,4 @@
     <main.verticle>me.piepers.jpc.collector.MainVerticle</main.verticle>
     <launcher.class>io.vertx.core.Launcher</launcher.class>
   </properties>
-
-
-
-
 </project>

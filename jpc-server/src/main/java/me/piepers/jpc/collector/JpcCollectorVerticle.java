@@ -41,7 +41,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
         this.server.connectHandler(netSocket -> this.handleConnection(netSocket));
         this.server
                 .rxListen()
-                .doOnSuccess(netServer -> LOGGER.debug("Server was started on port 5279. See jpc-logger for incoming transmissions."))
+                .doOnSuccess(netServer -> LOGGER.info("JPC Server was started on port 5279. See jpc-logger for incoming transmissions (only when in debug mode)."))
                 .doOnError(throwable -> LOGGER.error("Unable to start TCP server.", throwable))
                 .doOnError(Throwable::printStackTrace)
                 .subscribe(netServer -> startFuture.complete(),
@@ -88,7 +88,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
     private void checkForStaleConnections() {
         LocalDateTime now = LocalDateTime.now();
-        LOGGER.debug("Checking for stale connections at {}.", now.toString());
+        LOGGER.info("Checking for stale connections at {}.", now.toString());
         Observable
                 .fromIterable(this.connections
                         .values())
@@ -96,7 +96,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
                         .isStaleConnectionSuspect(Duration.ofMinutes(STALE_CONNECTION_TIMEOUT_MINUTES), now))
                 .flatMapCompletable(connection -> connection.closeConnection())
                 .andThen(Completable.fromAction(() -> this.timerId.set(0L)))
-                .doOnComplete(() -> LOGGER.debug("Check for stale connections completed."))
+                .doOnComplete(() -> LOGGER.info("Check for stale connections completed."))
                 .subscribe(() -> this.setupConnectionChecker(),
                         throwable -> LOGGER.error("Could not close connection.", throwable));
     }
@@ -113,6 +113,7 @@ public class JpcCollectorVerticle extends AbstractVerticle {
 
     private void handleConnection(NetSocket netSocket) {
         String id = UUID.randomUUID().toString();
+        LOGGER.info("Setting up new connection with id {}", id);
         NetSocketConnection netSocketConnection = NetSocketConnection.with(id, netSocket, this.vertx,
                 CLOSED_CONNECTION_PUBLISH_ADDRESS, METRICS_PUBLISH_ADDRESS);
         this.connections.put(id, netSocketConnection);
